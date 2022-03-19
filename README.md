@@ -21,13 +21,14 @@ USAGE:
     aedso [OPTIONS] <fasta> <vcf>
 
 ARGS:
-    <fasta>    Path to input PAF file
-    <vcf>      Path to input PAF file
+    <fasta>    Path to input fasta file
+    <vcf>      Path to input VCF file
 
 OPTIONS:
-    -h, --help       Print help information
-    -v               Sets the level of verbosity [default: 0]
-    -V, --version    Print version information
+    -h, --help                                       Print help information
+    -l, --output-line-length <output_line_length>    Max length of lines in eds [default: 80]
+    -v                                               Sets the level of verbosity [default: 0]
+    -V, --version                                    Print version information
 ```
 
 ## Example

@@ -155,25 +155,20 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     let now = Instant::now();
 
     let stdout = io::stdout();
-
-    // let mut buffer = BufWriter::new(File::create("foo.eds")?);
     let mut handle = stdout.lock();
 
     let mut begining: usize = 0;
     let mut end: usize = 0;
     let comma: Vec<u8> = Vec::from([b',']); // comma
-    //let newline: Vec<u8> = Vec::from([b'\n']); // newline
 
     for pos in &index.positions {
         end = *pos as usize - 1;
 
-
-        // buffer.write(&seq[begining..end]).unwrap();
         let mut faux_beginning = begining as usize;
-        while faux_beginning + 50 < end {
-            handle.write_all(&seq[faux_beginning..faux_beginning+50]).unwrap();
+        while faux_beginning + config.output_line_length < end {
+            handle.write_all(&seq[faux_beginning..faux_beginning + config.output_line_length]).unwrap();
             handle.write_all(b"\n").expect("Failed to add newline");
-            faux_beginning += 50;
+            faux_beginning += config.output_line_length;
         }
         handle.write_all(&seq[faux_beginning..end]).unwrap();
         handle.write_all(b"\n").expect("Failed to add newline");

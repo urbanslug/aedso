@@ -5,7 +5,8 @@ use std::collections::{HashMap, HashSet};
 pub struct AppConfig {
     pub fasta: String,
     pub vcf: String,
-    pub verbosity: u8
+    pub verbosity: u8,
+    pub output_line_length: usize,
 }
 
 impl fmt::Display for AppConfig {
@@ -13,9 +14,10 @@ impl fmt::Display for AppConfig {
         write!(f, "Config {{\n\
                    \tfasta: {},\n\
                    \tvcf: {}\n\
+                   \toutput line length: {}\n\
                    \tverbosity: {}\n\
                    }}",
-               self.fasta, self.vcf, self.verbosity)
+               self.fasta, self.vcf, self.output_line_length, self.verbosity)
     }
 }
 

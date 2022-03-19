@@ -17,13 +17,21 @@ pub fn start() -> AppConfig {
             Arg::new("fasta")
                 .required(true)
                 .takes_value(true)
-                .help("Path to input PAF file"),
+                .help("Path to input fasta file"),
         )
         .arg(
             Arg::new("vcf")
                 .required(true)
                 .takes_value(true)
-                .help("Path to input PAF file"),
+                .help("Path to input VCF file"),
+        )
+        .arg(
+            Arg::with_name("output_line_length")
+                .short('l')
+                .long("output-line-length")
+                .multiple(false)
+                .default_value("80")
+                .help("Max length of lines in eds"),
         )
         .arg(
             Arg::new("v")
@@ -37,10 +45,16 @@ pub fn start() -> AppConfig {
     let fasta: &str = matches.value_of("fasta").unwrap();
     let vcf: &str = matches.value_of("vcf").unwrap();
     let verbosity: u8 = matches.occurrences_of("v") as u8;
+    let output_line_length: usize = matches
+        .value_of("output_line_length")
+        .unwrap()
+        .parse::<usize>()
+        .unwrap();
 
     AppConfig {
         fasta: String::from(fasta),
         vcf: String::from(vcf),
-        verbosity
+        verbosity,
+        output_line_length
     }
 }

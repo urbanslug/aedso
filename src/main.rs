@@ -16,7 +16,7 @@ fn main() {
     let verbosity = config.verbosity;
 
     if verbosity > 0 {
-        eprintln!("{}", config)
+        eprintln!("{:#?}", config)
     }
 
     generate::generate(&config).expect("[main::main] Problem generating eds");
