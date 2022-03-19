@@ -1,5 +1,5 @@
 use std::fmt;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct AppConfig {
@@ -24,7 +24,7 @@ impl fmt::Display for AppConfig {
 pub type U8Vec = Vec<u8>;
 
 pub struct Index {
-    pub data: HashMap<usize,  HashSet<U8Vec>>,
+    pub data: HashMap<usize,  Vec<U8Vec>>,
     pub positions: Vec<usize>,
 }
 

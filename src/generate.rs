@@ -10,7 +10,6 @@ use std::fs::File;
 use std::io::{self, Write};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::BufReader;
-use std::collections::HashSet;
 use num;
 
 pub fn gen_index(
@@ -48,6 +47,8 @@ pub fn gen_index(
     let mut vcf_record = reader.empty_record();
     let mut cursor = 0;
 
+    let mut max_variant_capacity: usize = 0;
+
     loop {
         // TODO: handle errors
         match reader.next_record(&mut vcf_record) {
@@ -66,20 +67,34 @@ pub fn gen_index(
             break;
         }
 
-        let mut foo: HashSet<Vec<u8>> = HashSet::from([vcf_record.reference.clone()]);
+        let mut b: Vec<u8> = vcf_record.reference.clone();
+        b.shrink_to_fit();
+        let mut variants: Vec<Vec<u8>> = Vec::from([b]);
         for alt in &vcf_record.alternative {
-            foo.insert(alt.to_vec());
+            let mut x = alt.to_vec();
+            x.shrink_to_fit();
+            variants.push(x);
+        }
+
+        variants.shrink_to_fit();
+
+        if variants.capacity() > max_variant_capacity {
+            max_variant_capacity = variants.capacity();
         }
 
         index.positions.push(position);
         match index.data.get_mut(&position) {
-            Some(s) => {
-                for f in foo {
-                    s.insert(f);
+            Some(v) => {
+                for variant in variants {
+                    v.push(variant);
+                    v.shrink_to_fit();
                 }
+
+                v.sort();
+                v.dedup();
             },
             _ => {
-                index.data.insert(position, foo);
+                index.data.insert(position, variants);
             }
         };
 
@@ -158,7 +173,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     let mut handle = stdout.lock();
 
     let mut begining: usize = 0;
-    let mut end: usize = 0;
+    let mut end: usize;
     let comma: Vec<u8> = Vec::from([b',']); // comma
 
     for pos in &index.positions {
@@ -174,7 +189,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         handle.write_all(b"\n").expect("Failed to add newline");
 
 
-        let variants: &HashSet<Vec<u8>> = index
+        let variants: &Vec<Vec<u8>> = index
             .data
             .get(&pos)
             .expect(&format!("[generate::generate] index error pos {}", pos));

@@ -26,10 +26,10 @@ pub fn start() -> AppConfig {
                 .help("Path to input VCF file"),
         )
         .arg(
-            Arg::with_name("output_line_length")
+            Arg::new("output_line_length")
                 .short('l')
                 .long("output-line-length")
-                .multiple(false)
+                .multiple_values(false)
                 .default_value("80")
                 .help("Max length of lines in eds"),
         )
