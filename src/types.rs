@@ -22,18 +22,16 @@ impl fmt::Display for AppConfig {
 pub type U8Vec = Vec<u8>;
 
 pub struct Index {
-    pub data: HashMap<usize,  HashSet<Vec<U8Vec>>>,
-    pub positions_bin: Vec<u8>, // TODO: use a bitvector
-    pub positions: Vec<usize>,
+    pub data: HashMap<u32,  HashSet<U8Vec>>,
+    pub positions: Vec<u32>,
 }
 
 
 impl Index {
-    pub fn new(max: usize) -> Self {
+    pub fn new() -> Self {
         Self {
-            data: HashMap::with_capacity(100_000),
-            positions_bin: vec![0; max],
-            positions: Vec::with_capacity(1000_000)
+            data: HashMap::with_capacity(1_000_000),
+            positions: Vec::with_capacity(1_000_000)
         }
     }
 }

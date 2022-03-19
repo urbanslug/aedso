@@ -15,7 +15,12 @@ use std::collections::HashSet;
 use num;
 use std::cmp::Ordering;
 
-pub fn gen_index(num_bases: usize, _config: &types::AppConfig) -> Result<types::Index, VCFError> {
+pub fn gen_index(
+    num_bases: u32,
+    config: &types::AppConfig
+) -> Result<types::Index, VCFError>
+{
+    let verbosity = config.verbosity;
 
     // ------------
     // Progress bar
@@ -26,19 +31,27 @@ pub fn gen_index(num_bases: usize, _config: &types::AppConfig) -> Result<types::
                   .template(template)
                   .progress_chars("=> "));
 
+    let mut index = types::Index::new();
 
-    let mut index = types::Index::new(num_bases);
 
-    let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(
-        "/home/sluggie/data/1000-genomes/homo_sapiens-chr1.vcf.bgz",
-    )?)))?;
+    // ------------
+    // Parse VCF
+    // ------------
+    if verbosity > 1 {
+        eprintln!("Parsing VCF");
+    }
+
+    let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(&config.vcf)?)))?;
+
+    if verbosity > 2 {
+        eprintln!("Done parsing VCF.");
+    }
 
     let mut vcf_record = reader.empty_record();
     let mut cursor = 0;
 
     // TODO: remove
     let mut counter = 0;
-
 
     loop {
         // TODO: handle errors
@@ -53,32 +66,27 @@ pub fn gen_index(num_bases: usize, _config: &types::AppConfig) -> Result<types::
 
         counter += 1;
 
-        if counter > 1_000_000 {
-            break
-        }
-
-        let position = vcf_record.position as usize;
+        let position = vcf_record.position as u32;
 
         if position > num_bases {
             eprintln!("{} {:?} {:?}", vcf_record.position, vcf_record.reference, vcf_record.alternative );
             break;
         }
 
-        let mut foo: Vec<types::U8Vec> = vec![ vcf_record.reference.clone() ];
-        foo.extend_from_slice(&vcf_record.alternative);
+        let mut foo: HashSet<Vec<u8>> = HashSet::from([vcf_record.reference.clone()]);
+        for alt in &vcf_record.alternative {
+            foo.insert(alt.to_vec());
+        }
 
-        index.positions_bin[position] = 1;
         index.positions.push(position);
         match index.data.get_mut(&position) {
             Some(s) => {
-                s.insert(foo);
+                for f in foo {
+                    s.insert(f);
+                }
             },
             _ => {
-                let a = HashSet::from([
-                    foo
-                ]);
-
-                index.data.insert(position, a);
+                index.data.insert(position, foo);
             }
         };
 
@@ -130,16 +138,15 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     }
 
     let now = Instant::now();
-    let filename = "/home/sluggie/data/1000-genomes/Homo_sapiens.GRCh38.dna.chromosome.1.fa";
-    let mut reader = parse_fastx_file(&filename)
-        .expect(&format!("[generate::generate] invalid fasta path/file {}", filename));
+    let mut reader = parse_fastx_file(&config.fasta)
+        .expect(&format!("[generate::generate] invalid fasta path/file {}", config.fasta));
     let seq_record = reader
         .next()
         .expect("[generate::generate] end of iter")
         .expect("[generate::generate] invalid record");
 
     let seq = seq_record.seq();
-    let num_bases = seq.len();
+    let num_bases = seq.len() as u32;
 
     if verbosity > 2 {
         eprintln!("Done processing fasta. \n\
@@ -150,20 +157,6 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         );
     }
 
-    // ------------
-    // VCF
-    // ------------
-    if verbosity > 1 {
-        eprintln!("Parsing VCF");
-    }
-
-    let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(
-        "/home/sluggie/data/1000-genomes/homo_sapiens-chr1.vcf.bgz",
-    )?)))?;
-
-    if verbosity > 2 {
-        eprintln!("Done parsing VCF.");
-    }
 
 
     if verbosity > 1 {
@@ -171,7 +164,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     }
     let now = Instant::now();
 
-    let index = gen_index(num_bases, config);
+    let index = gen_index(num_bases, config).expect("Incorrect index");
 
     if verbosity > 2 {
         eprintln!("Done indexing VCF. Time taken {} seconds.",
@@ -188,94 +181,68 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
                   .progress_chars("=> "));
 
     // ------------
-    // Output
-    // ------------
-    let mut buffer = BufWriter::new(File::create("foo.eds")?);
-
-    // ------------
     // Generate EDS
     // ------------
-    let mut start = 0;
-    let mut stop = 0;
-
-    // TODO: remove
-    let mut counter = 0;
-
-    let dict = index.expect("Incorrect index").data;
-
-    for pos in 0..num_bases {
-        match dict.get(&pos) {
-            Some(_) => {},
-            _ => {},
-        }
+    if verbosity > 1 {
+        eprintln!("Writing EDS");
     }
+    let now = Instant::now();
 
-    // prepare VCFRecord object
-    let mut vcf_record = reader.empty_record();
+    let mut buffer = BufWriter::new(File::create("foo.eds")?);
+
+    let mut begining: usize = 0;
+    let mut end: usize = 0;
+    let comma: Vec<u8> = Vec::from([b',']); // comma
+    //let newline: Vec<u8> = Vec::from([b'\n']); // newline
+
+    for pos in &index.positions {
+        end = *pos as usize - 1;
 
 
-    loop {
-        // TODO: handle errors
-        match reader.next_record(&mut vcf_record) {
-            Ok(false) => break,
-            Ok(true) => (),
-            Err(e) => {
-                eprintln!("[generate::generate] skipping invalid record {e}");
-                continue
-            },
+        // buffer.write(&seq[begining..end]).unwrap();
+        let mut faux_beginning = begining as usize;
+        while faux_beginning + 50 < end {
+            buffer.write(&seq[faux_beginning..faux_beginning+50]).unwrap();
+            buffer.write(b"\n").expect("Failed to add newline");
+            faux_beginning += 50;
         }
+        buffer.write(&seq[faux_beginning..end]).unwrap();
+        buffer.write(b"\n").expect("Failed to add newline");
 
-        if counter > 20 {
-            break
-        }
 
-        counter += 1;
-        // dbg!(counter);
-        // eprintln!("{} {:?} {:?}", vcf_record.position, vcf_record.reference, vcf_record.alternative );
+        let variants: &HashSet<Vec<u8>> = index
+            .data
+            .get(&pos)
+            .expect(&format!("[generate::generate] index error pos {}", pos));
 
-        stop = vcf_record.position - 1 ;
-        // eprintln!("{}",std::str::from_utf8(&vcf_record.reference).unwrap());
+        let variants = intersperse(variants, &comma);
 
-        // solid string
-        match start.cmp(&stop) {
-            Ordering::Greater => {
-                eprintln!("[generate::generate] found another variant at pos {}, being sloppy", vcf_record.position);
-            },
-            Ordering::Less => {
-                buffer.write(&seq[start as usize..stop as usize]).unwrap();
-            },
-            _ => {} // ignore equality
-        }
-
-        // start degenerate letter
         buffer.write(b"{").unwrap();
-
-        // Handle more than one alt
-        let mut x: Vec<Vec<u8>> = vec![ vcf_record.reference.clone() ]; // ref
-        let y: Vec<u8> = b",".to_vec(); // comma
-
-        x.extend_from_slice(&vcf_record.alternative);
-        let x = intersperse(x, y);
-        for i in x {
+        for i in variants {
             // eprint!("{}", std::str::from_utf8(&i).unwrap());
-            buffer.write(&i).expect("[generate::generate] error writing {i}"); // alt
+            buffer.write(&i).expect(&format!("[generate::generate] error writing {}", pos));
         }
+        buffer.write(b"}").unwrap();
         // eprintln!();
 
-        buffer.write(b"}").unwrap();
-        buffer.flush().unwrap();
-
-        let ref_allele_len = vcf_record.reference.len() as u64;
-        let delta = num::abs_sub(stop as i64, start as i64) as u64 + ref_allele_len;
-        bar.inc(delta);
-
-        start = stop + ref_allele_len;
-
-        dbg!(start, stop);
+        begining = end;
     }
 
+    let last: u32 = *index
+        .positions
+        .last()
+        .expect("Could not get last position") - 1;
+
     // write the last bit
-    buffer.write(&seq[stop as usize..num_bases]).unwrap();
+    buffer.write(&seq[last as usize..num_bases as usize]).unwrap();
+
+
+    if verbosity > 2 {
+        eprintln!("Done writing EDS. \n\
+                   Time taken {} seconds.",
+                  now.elapsed().as_millis() as f64 / 1000.0
+        );
+    }
 
     Ok(())
 }
