@@ -23,8 +23,8 @@ fn main() {
 
     if verbosity > 1 {
         eprintln!(
-            "[wffilter::main] all done. Total time taken {} seconds.",
-            total_time.elapsed().as_millis() as f64 / 1000.0
+            "[aedso::main] all done. Total time taken {} minutes.",
+            total_time.elapsed().as_millis() as f64 / 1000.0 / 60.0
         )
     }
 }

@@ -14,7 +14,7 @@ use std::collections::HashSet;
 use num;
 
 pub fn gen_index(
-    num_bases: u32,
+    num_bases: usize,
     config: &types::AppConfig
 ) -> Result<types::Index, VCFError>
 {
@@ -59,7 +59,7 @@ pub fn gen_index(
             },
         }
 
-        let position = vcf_record.position as u32;
+        let position = vcf_record.position as usize;
 
         if position > num_bases {
             eprintln!("{} {:?} {:?}", vcf_record.position, vcf_record.reference, vcf_record.alternative );
@@ -112,7 +112,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         .expect("[generate::generate] invalid record");
 
     let seq = seq_record.seq();
-    let num_bases = seq.len() as u32;
+    let num_bases = seq.len();
 
     if verbosity > 2 {
         eprintln!("Done processing fasta. \n\
@@ -193,13 +193,13 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         begining = end;
     }
 
-    let last: u32 = *index
+    let last: usize = *index
         .positions
         .last()
         .expect("Could not get last position") - 1;
 
     // write the last bit
-    handle.write_all(&seq[last as usize..num_bases as usize]).unwrap();
+    handle.write_all(&seq[last..num_bases]).unwrap();
 
     if verbosity > 2 {
         eprintln!("Done writing EDS. \n\
