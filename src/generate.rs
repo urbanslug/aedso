@@ -92,33 +92,6 @@ pub fn gen_index(
     Ok(index)
 }
 
-fn handle_fasta(config: &types::AppConfig) {
-    let verbosity = config.verbosity;
-
-    // ------------
-    // Fasta
-    // ------------
-    if verbosity > 1 {
-        eprintln!("Processing Fasta.");
-    }
-    let filename = &config.fasta;
-    let mut reader = parse_fastx_file(&filename)
-        .expect(&format!("[generate::generate] invalid fasta path/file {}", filename));
-    let seq_record = reader
-        .next()
-        .expect("[generate::generate] end of iter")
-        .expect("[generate::generate] invalid record");
-
-    let seq = seq_record.seq();
-    let num_bases = seq.len();
-
-    todo!()
-}
-
-fn handle_vcf(config: &types::AppConfig) {
-    todo!()
-}
-
 // TODO: should we write to stdout?
 pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     let verbosity = config.verbosity;
