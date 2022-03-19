@@ -7,13 +7,11 @@ use itertools::intersperse;
 use vcf::{VCFReader, VCFError};
 use flate2::read::MultiGzDecoder;
 use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufWriter;
+use std::io::{self, Write};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::BufReader;
 use std::collections::HashSet;
 use num;
-use std::cmp::Ordering;
 
 pub fn gen_index(
     num_bases: u32,
@@ -50,9 +48,6 @@ pub fn gen_index(
     let mut vcf_record = reader.empty_record();
     let mut cursor = 0;
 
-    // TODO: remove
-    let mut counter = 0;
-
     loop {
         // TODO: handle errors
         match reader.next_record(&mut vcf_record) {
@@ -63,8 +58,6 @@ pub fn gen_index(
                 continue
             },
         }
-
-        counter += 1;
 
         let position = vcf_record.position as u32;
 
@@ -188,7 +181,10 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     }
     let now = Instant::now();
 
-    let mut buffer = BufWriter::new(File::create("foo.eds")?);
+    let stdout = io::stdout();
+
+    // let mut buffer = BufWriter::new(File::create("foo.eds")?);
+    let mut handle = stdout.lock();
 
     let mut begining: usize = 0;
     let mut end: usize = 0;
@@ -202,12 +198,12 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         // buffer.write(&seq[begining..end]).unwrap();
         let mut faux_beginning = begining as usize;
         while faux_beginning + 50 < end {
-            buffer.write(&seq[faux_beginning..faux_beginning+50]).unwrap();
-            buffer.write(b"\n").expect("Failed to add newline");
+            handle.write_all(&seq[faux_beginning..faux_beginning+50]).unwrap();
+            handle.write_all(b"\n").expect("Failed to add newline");
             faux_beginning += 50;
         }
-        buffer.write(&seq[faux_beginning..end]).unwrap();
-        buffer.write(b"\n").expect("Failed to add newline");
+        handle.write_all(&seq[faux_beginning..end]).unwrap();
+        handle.write_all(b"\n").expect("Failed to add newline");
 
 
         let variants: &HashSet<Vec<u8>> = index
@@ -217,13 +213,14 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
 
         let variants = intersperse(variants, &comma);
 
-        buffer.write(b"{").unwrap();
+        handle.write_all(b"{").unwrap();
         for i in variants {
-            // eprint!("{}", std::str::from_utf8(&i).unwrap());
-            buffer.write(&i).expect(&format!("[generate::generate] error writing {}", pos));
+            handle.write_all(&i).expect(&format!("[generate::generate] error writing {}", pos));
         }
-        buffer.write(b"}").unwrap();
-        // eprintln!();
+        handle.write_all(b"}").unwrap();
+
+        let delta = num::abs_sub(end as i64, begining as i64) as u64;
+        bar.inc(delta);
 
         begining = end;
     }
@@ -234,8 +231,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         .expect("Could not get last position") - 1;
 
     // write the last bit
-    buffer.write(&seq[last as usize..num_bases as usize]).unwrap();
-
+    handle.write_all(&seq[last as usize..num_bases as usize]).unwrap();
 
     if verbosity > 2 {
         eprintln!("Done writing EDS. \n\
