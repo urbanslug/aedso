@@ -1,7 +1,11 @@
 [package]
-name = "low-mem-edso"
-version = "0.1.0"
+name = "aedso"
+version = "0.0.1"
 edition = "2021"
+description = "Another Elastic Degenerate String Outputter (aedso)"
+repository = "https://github.com/urbanslug/aedso"
+readme = "README.md"
+license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -11,3 +15,4 @@ vcf = "0.6.0"
 flate2 = "1.0"
 itertools = "0.10.3"
 indicatif = "0.16.2"
+clap = "3.1.6"

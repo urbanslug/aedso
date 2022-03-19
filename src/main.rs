@@ -1,4 +1,8 @@
 ///! VCF is 1 indexed
+
+mod cli;
+mod types;
+
 use needletail::{parse_fastx_file, Sequence, FastxReader};
 
 use itertools::intersperse;
@@ -10,42 +14,66 @@ use std::io::BufWriter;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::io::BufReader;
 
-fn loop_vcf() -> Result<(), VCFError> {
+// TODO: should we write to stdout?
+fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
+    // ------------
+    // Fasta
+    // ------------
     let filename = "/home/sluggie/data/1000-genomes/Homo_sapiens.GRCh38.dna.chromosome.1.fa";
-    let mut reader = parse_fastx_file(&filename).expect("valid path/file");
-    let seq_record = reader.next().expect("end of iter").expect("invalid record");
-    let num_bases = seq_record.num_bases();
+    let mut reader = parse_fastx_file(&filename).expect("[main::generate] invalid fasta path/file");
+    let seq_record = reader
+        .next()
+        .expect("[main::generate] end of iter")
+        .expect("[main::generate] invalid record");
+
+    let num_bases = seq_record.num_bases(); // Approximate number of bases
     let seq = seq_record.seq();
 
+    // ------------
+    // Progress bar
+    // ------------
     let bar = ProgressBar::new(num_bases as u64);
-    let template = "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}]  {pos:>7}/{len:7} ({eta_precise})";
+    let template = "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}]  {pos:>7}/{len:7}  ({eta_precise})";
     bar.set_style(ProgressStyle::default_bar()
                   .template(template)
                   .progress_chars("=> "));
 
-
-    let mut buffer = BufWriter::new(File::create("foo.eds")?);
-
+    // ------------
+    // VCF
+    // ------------
     let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(
         "/home/sluggie/data/1000-genomes/homo_sapiens-chr1.vcf.bgz",
     )?)))?;
 
+    // ------------
+    // Output
+    // ------------
+    let mut buffer = BufWriter::new(File::create("foo.eds")?);
 
+    // ------------
+    // Generate EDS
+    // ------------
     let mut start = 0;
     let mut stop = 0;
-    // prepare VCFRecord object
-    let mut vcf_record = reader.empty_record();
+
+    // TODO: remove
     let mut counter = 0;
 
+    // prepare VCFRecord object
+    let mut vcf_record = reader.empty_record();
     loop {
         // TODO: handle errors
         match reader.next_record(&mut vcf_record) {
             Ok(false) => break,
             Ok(true) => (),
             Err(e) => {
-                dbg!(e);
+                eprintln!("[main::generate] skipping invalid record {e}");
                 continue
             },
+        }
+
+        if counter > 20 {
+            break
         }
 
         counter += 1;
@@ -54,19 +82,21 @@ fn loop_vcf() -> Result<(), VCFError> {
         stop = vcf_record.position - 1 ;
         //eprintln!("{}",std::str::from_utf8(&vcf_record.reference).unwrap());
 
+        // solid string
         buffer.write(&seq[start as usize..stop as usize]).unwrap();
+
+        // start degenerate letter
         buffer.write(b"{").unwrap();
 
-        // TODO: handle more than one base on the ref and alt
-
+        // Handle more than one alt
         let mut x: Vec<Vec<u8>> = vec![ vcf_record.reference.clone() ]; // ref
-        let mut y: Vec<u8> = b",".to_vec(); // comma
+        let y: Vec<u8> = b",".to_vec(); // comma
 
         x.extend_from_slice(&vcf_record.alternative);
         let x = intersperse(x, y);
         for i in x {
             // eprint!("{}", std::str::from_utf8(&i).unwrap() );
-            buffer.write(&i); // alt
+            buffer.write(&i).expect("[main::generate] error writing {i}"); // alt
         }
         // eprintln!();
 
@@ -83,28 +113,18 @@ fn loop_vcf() -> Result<(), VCFError> {
         // dbg!(delta);
         bar.inc(delta);
         //start = stop + ref_allele_len;
-
     }
 
     Ok(())
 }
 
-
-
-fn loop_fasta() {
-    let filename = "/home/sluggie/data/1000-genomes/Homo_sapiens.GRCh38.dna.chromosome.1.fa";
-
-    let mut reader = parse_fastx_file(&filename).expect("valid path/file");
-    while let Some(record) = reader.next() {
-        let seqrec = record.expect("invalid record");
-        for base in seqrec.seq().iter().take(10) {
-            eprint!("{}", base);
-        }
-    }
-}
-
 fn main() {
-    //loop_fasta();
-    loop_vcf().unwrap();
-    ()
+    let config: types::AppConfig = cli::start();
+    let verbosity = config.verbosity;
+
+    if verbosity > 1 {
+        eprintln!("{}", config)
+    }
+
+    generate(&config).expect("[main::main] Problem generating eds");
 }
