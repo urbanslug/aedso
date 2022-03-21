@@ -1,22 +1,17 @@
 use crate::types;
 
+use needletail::parse_fastx_file;
 use std::time::Instant;
-use needletail::{parse_fastx_file};
 
-use itertools::intersperse;
-use vcf::{VCFReader, VCFError};
 use flate2::read::MultiGzDecoder;
-use std::fs::File;
-use std::io::{self, Write};
 use indicatif::{ProgressBar, ProgressStyle};
+use itertools::intersperse;
+use std::fs::File;
 use std::io::BufReader;
-use num;
+use std::io::{self, Write};
+use vcf::{VCFError, VCFReader};
 
-pub fn gen_index(
-    num_bases: usize,
-    config: &types::AppConfig
-) -> Result<types::Index, VCFError>
-{
+pub fn gen_index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index, VCFError> {
     let verbosity = config.verbosity;
 
     // ------------
@@ -24,12 +19,13 @@ pub fn gen_index(
     // ------------
     let bar = ProgressBar::new(num_bases as u64);
     let template = "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}]  {pos:>7}/{len:7}  ({eta_precise})";
-    bar.set_style(ProgressStyle::default_bar()
-                  .template(template)
-                  .progress_chars("=> "));
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(template)
+            .progress_chars("=> "),
+    );
 
     let mut index = types::Index::new();
-
 
     // ------------
     // Parse VCF
@@ -38,7 +34,9 @@ pub fn gen_index(
         eprintln!("Parsing VCF");
     }
 
-    let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(&config.vcf)?)))?;
+    let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(
+        &config.vcf,
+    )?)))?;
 
     if verbosity > 2 {
         eprintln!("Done parsing VCF.");
@@ -56,14 +54,17 @@ pub fn gen_index(
             Ok(true) => (),
             Err(e) => {
                 eprintln!("[generate::generate] skipping invalid record {e}");
-                continue
-            },
+                continue;
+            }
         }
 
         let position = vcf_record.position as usize;
 
         if position > num_bases {
-            eprintln!("{} {:?} {:?}", vcf_record.position, vcf_record.reference, vcf_record.alternative );
+            eprintln!(
+                "{} {:?} {:?}",
+                vcf_record.position, vcf_record.reference, vcf_record.alternative
+            );
             break;
         }
 
@@ -92,7 +93,7 @@ pub fn gen_index(
 
                 v.sort();
                 v.dedup();
-            },
+            }
             _ => {
                 index.data.insert(position, variants);
             }
@@ -119,8 +120,12 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     }
 
     let now = Instant::now();
-    let mut reader = parse_fastx_file(&config.fasta)
-        .expect(&format!("[generate::generate] invalid fasta path/file {}", config.fasta));
+    let mut reader = parse_fastx_file(&config.fasta).unwrap_or_else(|_| {
+        panic!(
+            "[generate::generate] invalid fasta path/file {}",
+            config.fasta
+        )
+    });
     let seq_record = reader
         .next()
         .expect("[generate::generate] end of iter")
@@ -130,15 +135,14 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     let num_bases = seq.len();
 
     if verbosity > 2 {
-        eprintln!("Done processing fasta. \n\
+        eprintln!(
+            "Done processing fasta. \n\
                    Number of bases: {}. \n\
                    Time taken {} seconds.",
-                  num_bases,
-                  now.elapsed().as_millis() as f64 / 1000.0
+            num_bases,
+            now.elapsed().as_millis() as f64 / 1000.0
         );
     }
-
-
 
     if verbosity > 1 {
         eprintln!("Indexing VCF");
@@ -148,8 +152,10 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     let index = gen_index(num_bases, config).expect("Incorrect index");
 
     if verbosity > 2 {
-        eprintln!("Done indexing VCF. Time taken {} seconds.",
-                  now.elapsed().as_millis() as f64 / 1000.0);
+        eprintln!(
+            "Done indexing VCF. Time taken {} seconds.",
+            now.elapsed().as_millis() as f64 / 1000.0
+        );
     }
 
     // ------------
@@ -157,9 +163,11 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     // ------------
     let bar = ProgressBar::new(num_bases as u64);
     let template = "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}]  {pos:>7}/{len:7}  ({eta_precise})";
-    bar.set_style(ProgressStyle::default_bar()
-                  .template(template)
-                  .progress_chars("=> "));
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(template)
+            .progress_chars("=> "),
+    );
 
     // ------------
     // Generate EDS
@@ -181,24 +189,27 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
 
         let mut faux_beginning = begining as usize;
         while faux_beginning + config.output_line_length < end {
-            handle.write_all(&seq[faux_beginning..faux_beginning + config.output_line_length]).unwrap();
+            handle
+                .write_all(&seq[faux_beginning..faux_beginning + config.output_line_length])
+                .unwrap();
             handle.write_all(b"\n").expect("Failed to add newline");
             faux_beginning += config.output_line_length;
         }
         handle.write_all(&seq[faux_beginning..end]).unwrap();
         handle.write_all(b"\n").expect("Failed to add newline");
 
-
         let variants: &Vec<Vec<u8>> = index
             .data
-            .get(&pos)
-            .expect(&format!("[generate::generate] index error pos {}", pos));
+            .get(pos)
+            .unwrap_or_else(|| panic!("[generate::generate] index error pos {}", pos));
 
         let variants = intersperse(variants, &comma);
 
         handle.write_all(b"{").unwrap();
         for i in variants {
-            handle.write_all(&i).expect(&format!("[generate::generate] error writing {}", pos));
+            handle
+                .write_all(i)
+                .unwrap_or_else(|_| panic!("[generate::generate] error writing {}", pos));
         }
         handle.write_all(b"}").unwrap();
 
@@ -208,18 +219,15 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         begining = end;
     }
 
-    let last: usize = *index
-        .positions
-        .last()
-        .expect("Could not get last position") - 1;
+    let last: usize = *index.positions.last().expect("Could not get last position") - 1;
 
     // write the last bit
     handle.write_all(&seq[last..num_bases]).unwrap();
 
     if verbosity > 2 {
-        eprintln!("Done writing EDS. \n\
-                   Time taken {} seconds.",
-                  now.elapsed().as_millis() as f64 / 1000.0
+        eprintln!(
+            "Done writing EDS. Time taken {} seconds.",
+            now.elapsed().as_millis() as f64 / 1000.0
         );
     }
 

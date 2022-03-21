@@ -1,6 +1,6 @@
-use clap::{Command, Arg};
-use std::env;
 use crate::types::AppConfig;
+use clap::{Arg, Command};
+use std::env;
 
 // Env vars
 const NAME: &str = env!("CARGO_PKG_NAME");
@@ -55,6 +55,6 @@ pub fn start() -> AppConfig {
         fasta: String::from(fasta),
         vcf: String::from(vcf),
         verbosity,
-        output_line_length
+        output_line_length,
     }
 }

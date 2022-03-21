@@ -4,8 +4,8 @@
 //!
 
 mod cli;
-mod types;
 mod generate;
+mod types;
 
 use std::time::Instant;
 

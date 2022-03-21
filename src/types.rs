@@ -1,5 +1,5 @@
-use std::fmt;
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct AppConfig {
@@ -11,13 +11,16 @@ pub struct AppConfig {
 
 impl fmt::Display for AppConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Config {{\n\
+        write!(
+            f,
+            "Config {{\n\
                    \tfasta: {},\n\
                    \tvcf: {}\n\
                    \toutput line length: {}\n\
                    \tverbosity: {}\n\
                    }}",
-               self.fasta, self.vcf, self.output_line_length, self.verbosity)
+            self.fasta, self.vcf, self.output_line_length, self.verbosity
+        )
     }
 }
 
@@ -28,12 +31,11 @@ pub struct Index {
     pub positions: Vec<usize>,
 }
 
-
 impl Index {
     pub fn new() -> Self {
         Self {
             data: HashMap::with_capacity(1_000_000),
-            positions: Vec::with_capacity(1_000_000)
+            positions: Vec::with_capacity(1_000_000),
         }
     }
 }
