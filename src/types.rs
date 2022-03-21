@@ -24,7 +24,7 @@ impl fmt::Display for AppConfig {
 pub type U8Vec = Vec<u8>;
 
 pub struct Index {
-    pub data: HashMap<usize,  Vec<U8Vec>>,
+    pub data: HashMap<usize, Vec<U8Vec>>,
     pub positions: Vec<usize>,
 }
 
