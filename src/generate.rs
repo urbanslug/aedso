@@ -11,6 +11,8 @@ use std::io::BufReader;
 use std::io::{self, Write};
 use vcf::{VCFError, VCFReader};
 
+
+
 pub fn gen_index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index, VCFError> {
     let verbosity = config.verbosity;
 
@@ -116,7 +118,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     // Fasta
     // ------------
     if verbosity > 1 {
-        eprintln!("Processing Fasta.");
+        eprintln!("[generate::generate] Processing Fasta.");
     }
 
     let now = Instant::now();
