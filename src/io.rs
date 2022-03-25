@@ -2,7 +2,6 @@ use crate::types;
 use fbox::ux;
 use itertools::intersperse;
 use std::io::{self, Write};
-use std::time::Instant;
 
 // TODO: should we only write to stdout?
 pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index: &types::Index) {
@@ -12,15 +11,7 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
         eprintln!("[io::write_eds] Writing EDS");
     }
 
-    // ------------
-    // Progress bar
-    // ------------
     let bar = ux::progress_bar(num_bases as u64);
-
-    // ------------
-    // Generate EDS
-    // ------------
-    let now = Instant::now();
 
     let stdout = io::stdout();
     let mut handle = stdout.lock();
@@ -68,11 +59,4 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
 
     // write the last bit
     handle.write_all(&seq[last..num_bases]).unwrap();
-
-    if verbosity > 2 {
-        eprintln!(
-            "Done writing EDS. Time taken {} seconds.",
-            now.elapsed().as_millis() as f64 / 1000.0
-        );
-    }
 }
