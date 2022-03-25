@@ -44,16 +44,20 @@ fn main() -> Result<(), VCFError> {
         .expect("[aedso::main] end of iter")
         .expect("[aedso::main] invalid record");
 
+    let name: Vec<u8> = seq_record.id().iter().take_while(|x| !(**x).is_ascii_whitespace() ).cloned().collect();
+
     let seq = seq_record.seq();
     let num_bases = seq.len();
 
     if verbosity > 2 {
         eprintln!(
-            "{0:two_spaces$}Done processing fasta. \n\
-             {0:four_spaces$}Number of bases: {bases}. \n\
+            "{0:two_spaces$}Done processing fasta: \n\
+             {0:four_spaces$}Sequence: {name} \n\
+             {0:four_spaces$}Number of bases: {bases} \n\
              {0:four_spaces$}Time taken {time} seconds.",
             "",
             bases = num_bases,
+            name = std::str::from_utf8( &name ).unwrap(),
             time = now.elapsed().as_millis() as f64 / 1000.0,
             two_spaces=2, four_spaces=4
         );
@@ -65,7 +69,7 @@ fn main() -> Result<(), VCFError> {
 
     let now = Instant::now();
 
-    let index = index::index(num_bases, &config).expect("Incorrect index");
+    let index = index::index(&name, num_bases, &config).expect("Incorrect index");
 
     if verbosity > 2 {
         eprintln!(

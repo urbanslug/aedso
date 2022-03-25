@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::BufReader;
 use vcf::{VCFError, VCFReader};
 
-pub fn index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index, VCFError> {
+pub fn index(seq_name: &[u8], num_bases: usize, config: &types::AppConfig) -> Result<types::Index, VCFError> {
     let verbosity = config.verbosity;
 
     // ------------
@@ -17,6 +17,7 @@ pub fn index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index
 
     let mut index = types::Index::new();
 
+    // TODO: move this to a fn
     // ---------
     // Parse VCF
     // ---------
@@ -48,9 +49,15 @@ pub fn index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index
         // TODO: handle errors
         match reader.next_record(&mut vcf_record) {
             Ok(false) => break,
-            Ok(true) => (),
+            Ok(true) => (
+                if vcf_record.chromosome != seq_name {
+                    continue;
+                }
+            ),
             Err(e) => {
-                eprintln!("[index::index] skipping invalid record {e}");
+                if verbosity > 2 {
+                    eprintln!("[index::index] skipping invalid record {e}");
+                }
                 continue;
             }
         }
