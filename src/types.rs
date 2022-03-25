@@ -3,6 +3,12 @@
 use std::collections::HashMap;
 use std::fmt;
 
+// ---------
+// Constants
+// ---------
+// Expected row count
+const NUM_ROWS: usize = 1_000_000;
+
 // ----------
 // App config
 // ----------
@@ -46,8 +52,8 @@ pub struct Index {
 impl Index {
     pub fn new() -> Self {
         Self {
-            data: HashMap::with_capacity(1_000_000),
-            positions: Vec::with_capacity(1_000_000),
+            data: HashMap::with_capacity(NUM_ROWS),
+            positions: Vec::with_capacity(NUM_ROWS),
         }
     }
 }
