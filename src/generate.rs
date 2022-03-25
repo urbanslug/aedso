@@ -1,17 +1,14 @@
 use crate::types;
 
-use needletail::parse_fastx_file;
-use std::time::Instant;
-
+use fbox::ux;
 use flate2::read::MultiGzDecoder;
-use itertools::intersperse;
+use needletail::parse_fastx_file;
 use std::fs::File;
 use std::io::BufReader;
-use std::io::{self, Write};
+use std::time::Instant;
 use vcf::{VCFError, VCFReader};
-use fbox::ux;
 
-
+use crate::io;
 
 pub fn gen_index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index, VCFError> {
     let verbosity = config.verbosity;
@@ -104,7 +101,6 @@ pub fn gen_index(num_bases: usize, config: &types::AppConfig) -> Result<types::I
     Ok(index)
 }
 
-// TODO: should we write to stdout?
 pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     let verbosity = config.verbosity;
 
@@ -154,72 +150,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
         );
     }
 
-    // ------------
-    // Progress bar
-    // ------------
-    let bar = ux::progress_bar(num_bases as u64);
-
-    // ------------
-    // Generate EDS
-    // ------------
-    if verbosity > 1 {
-        eprintln!("Writing EDS");
-    }
-    let now = Instant::now();
-
-    let stdout = io::stdout();
-    let mut handle = stdout.lock();
-
-    let mut begining: usize = 0;
-    let mut end: usize;
-    let comma: Vec<u8> = Vec::from([b',']); // comma
-
-    for pos in &index.positions {
-        end = *pos as usize - 1;
-
-        let mut faux_beginning = begining as usize;
-        while faux_beginning + config.output_line_length < end {
-            handle
-                .write_all(&seq[faux_beginning..faux_beginning + config.output_line_length])
-                .unwrap();
-            handle.write_all(b"\n").expect("Failed to add newline");
-            faux_beginning += config.output_line_length;
-        }
-        handle.write_all(&seq[faux_beginning..end]).unwrap();
-        handle.write_all(b"\n").expect("Failed to add newline");
-
-        let variants: &Vec<Vec<u8>> = index
-            .data
-            .get(pos)
-            .unwrap_or_else(|| panic!("[generate::generate] index error pos {}", pos));
-
-        let variants = intersperse(variants, &comma);
-
-        handle.write_all(b"{").unwrap();
-        for i in variants {
-            handle
-                .write_all(i)
-                .unwrap_or_else(|_| panic!("[generate::generate] error writing {}", pos));
-        }
-        handle.write_all(b"}").unwrap();
-
-        let delta = num::abs_sub(end as i64, begining as i64) as u64;
-        bar.inc(delta);
-
-        begining = end;
-    }
-
-    let last: usize = *index.positions.last().expect("Could not get last position") - 1;
-
-    // write the last bit
-    handle.write_all(&seq[last..num_bases]).unwrap();
-
-    if verbosity > 2 {
-        eprintln!(
-            "Done writing EDS. Time taken {} seconds.",
-            now.elapsed().as_millis() as f64 / 1000.0
-        );
-    }
+    io::write_eds(config, num_bases, &seq, &index);
 
     Ok(())
 }

@@ -5,6 +5,7 @@
 
 mod cli;
 mod generate;
+mod io;
 mod types;
 
 use std::time::Instant;
