@@ -4,12 +4,12 @@ use needletail::parse_fastx_file;
 use std::time::Instant;
 
 use flate2::read::MultiGzDecoder;
-use indicatif::{ProgressBar, ProgressStyle};
 use itertools::intersperse;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::{self, Write};
 use vcf::{VCFError, VCFReader};
+use fbox::ux;
 
 
 
@@ -19,13 +19,7 @@ pub fn gen_index(num_bases: usize, config: &types::AppConfig) -> Result<types::I
     // ------------
     // Progress bar
     // ------------
-    let bar = ProgressBar::new(num_bases as u64);
-    let template = "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}]  {pos:>7}/{len:7}  ({eta_precise})";
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(template)
-            .progress_chars("=> "),
-    );
+    let bar = ux::progress_bar(num_bases as u64);
 
     let mut index = types::Index::new();
 
@@ -163,13 +157,7 @@ pub fn generate(config: &types::AppConfig) -> Result<(), VCFError> {
     // ------------
     // Progress bar
     // ------------
-    let bar = ProgressBar::new(num_bases as u64);
-    let template = "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}]  {pos:>7}/{len:7}  ({eta_precise})";
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(template)
-            .progress_chars("=> "),
-    );
+    let bar = ux::progress_bar(num_bases as u64);
 
     // ------------
     // Generate EDS
