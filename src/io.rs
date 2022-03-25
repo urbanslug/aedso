@@ -30,16 +30,16 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
             handle
                 .write_all(&seq[faux_beginning..faux_beginning + config.output_line_length])
                 .unwrap();
-            handle.write_all(b"\n").expect("Failed to add newline");
+            handle.write_all(b"\n").expect("[io::io] Failed to add newline");
             faux_beginning += config.output_line_length;
         }
         handle.write_all(&seq[faux_beginning..end]).unwrap();
-        handle.write_all(b"\n").expect("Failed to add newline");
+        handle.write_all(b"\n").expect("[io::io] Failed to add newline");
 
         let variants: &Vec<Vec<u8>> = index
             .data
             .get(pos)
-            .unwrap_or_else(|| panic!("[generate::generate] index error pos {}", pos));
+            .unwrap_or_else(|| panic!("[io::io] index error pos {}", pos));
 
         let variants = intersperse(variants, &comma);
 
@@ -47,7 +47,7 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
         for i in variants {
             handle
                 .write_all(i)
-                .unwrap_or_else(|_| panic!("[generate::generate] error writing {}", pos));
+                .unwrap_or_else(|_| panic!("[io::io] error writing {}", pos));
         }
         handle.write_all(b"}").unwrap();
 
@@ -57,7 +57,7 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
         begining = end;
     }
 
-    let last: usize = *index.positions.last().expect("Could not get last position") - 1;
+    let last: usize = *index.positions.last().expect("[io::io] could not get last position") - 1;
 
     // write the last bit
     handle.write_all(&seq[last..num_bases]).unwrap();

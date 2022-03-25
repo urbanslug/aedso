@@ -1,6 +1,7 @@
 //! Generate EDS.
 //!
-//! VCF is 1 indexed
+//! VCF is 1 indexed i.e. genome loci are started counting from zero.
+//! Expects a single sequence in a fasta file and a VCF from one sequence.
 //!
 
 mod cli;
@@ -19,7 +20,7 @@ fn main() -> Result<(), VCFError> {
     let verbosity = config.verbosity;
 
     if verbosity > 0 {
-        eprintln!("{:#?}", config)
+        eprintln!("{}", config)
     }
 
     let verbosity = config.verbosity;
@@ -28,40 +29,39 @@ fn main() -> Result<(), VCFError> {
     // Fasta
     // ------------
     if verbosity > 1 {
-        eprintln!("[generate::generate] Processing Fasta.");
+        eprintln!("[aedso::main] Processing Fasta.");
     }
 
     let now = Instant::now();
     let mut reader = parse_fastx_file(&config.fasta).unwrap_or_else(|_| {
         panic!(
-            "[generate::generate] invalid fasta path/file {}",
+            "[aedso::main] invalid fasta path/file {}",
             config.fasta
         )
     });
     let seq_record = reader
         .next()
-        .expect("[generate::generate] end of iter")
-        .expect("[generate::generate] invalid record");
+        .expect("[aedso::main] end of iter")
+        .expect("[aedso::main] invalid record");
 
     let seq = seq_record.seq();
     let num_bases = seq.len();
 
     if verbosity > 2 {
         eprintln!(
-            "Done processing fasta. \n\
-                   Number of bases: {}. \n\
-                   Time taken {} seconds.",
-            num_bases,
-            now.elapsed().as_millis() as f64 / 1000.0
+            "{0:two_spaces$}Done processing fasta. \n\
+             {0:four_spaces$}Number of bases: {bases}. \n\
+             {0:four_spaces$}Time taken {time} seconds.",
+            "",
+            bases = num_bases,
+            time = now.elapsed().as_millis() as f64 / 1000.0,
+            two_spaces=2, four_spaces=4
         );
     }
 
     // --------------
     // Generate index
     // --------------
-    if verbosity > 1 {
-        eprintln!("Indexing VCF");
-    }
 
     let now = Instant::now();
 
@@ -69,8 +69,10 @@ fn main() -> Result<(), VCFError> {
 
     if verbosity > 2 {
         eprintln!(
-            "Done indexing VCF. Time taken {} seconds.",
-            now.elapsed().as_millis() as f64 / 1000.0
+            "{0:two_spaces$}Done indexing VCF. Time taken {time} seconds.",
+            "",
+            time=now.elapsed().as_millis() as f64 / 1000.0,
+            two_spaces=2
         );
     }
 
@@ -83,16 +85,24 @@ fn main() -> Result<(), VCFError> {
 
     if verbosity > 2 {
         eprintln!(
-            "Done writing EDS. Time taken {} seconds.",
-            now.elapsed().as_millis() as f64 / 1000.0
+            "{0:two_spaces$}Done writing EDS. Time taken {time} seconds.",
+            "",
+            time=now.elapsed().as_millis() as f64 / 1000.0,
+            two_spaces=2
         );
     }
 
     if verbosity > 1 {
-        eprintln!(
-            "[aedso::main] all done. Total time taken {} minutes.",
-            total_time.elapsed().as_millis() as f64 / 1000.0 / 60.0
-        )
+        // time in seconds
+        let time = total_time.elapsed().as_millis() as f64 / 1000.0;
+
+        let time_str = if time > 60.0 {
+            format!("{} minutes", time/60.0)
+        } else {
+            format!("{} seconds", time)
+        };
+
+        eprintln!("[aedso::main] all done. Total time taken {}.", time_str);
     }
 
     Ok(())

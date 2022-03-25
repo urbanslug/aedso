@@ -21,7 +21,7 @@ pub fn index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index
     // Parse VCF
     // ---------
     if verbosity > 1 {
-        eprintln!("Parsing VCF");
+        eprintln!("[index::index] Parsing VCF");
     }
 
     let mut reader = VCFReader::new(BufReader::new(MultiGzDecoder::new(File::open(
@@ -29,7 +29,7 @@ pub fn index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index
     )?)))?;
 
     if verbosity > 2 {
-        eprintln!("Done parsing VCF.");
+        eprintln!("{0:two_spaces$}Done parsing VCF.", "", two_spaces=2);
     }
 
     let mut vcf_record = reader.empty_record();
@@ -40,13 +40,17 @@ pub fn index(num_bases: usize, config: &types::AppConfig) -> Result<types::Index
     // --------------
     // Generate index
     // --------------
+    if verbosity > 1 {
+        eprintln!("[index::index] Indexing VCF");
+    }
+
     loop {
         // TODO: handle errors
         match reader.next_record(&mut vcf_record) {
             Ok(false) => break,
             Ok(true) => (),
             Err(e) => {
-                eprintln!("[generate::generate] skipping invalid record {e}");
+                eprintln!("[index::index] skipping invalid record {e}");
                 continue;
             }
         }

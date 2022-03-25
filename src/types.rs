@@ -6,7 +6,7 @@ use std::fmt;
 // ---------
 // Constants
 // ---------
-// Expected row count
+/// Expected row count `1_000_000`
 const NUM_ROWS: usize = 1_000_000;
 
 // ----------
@@ -25,12 +25,14 @@ impl fmt::Display for AppConfig {
         write!(
             f,
             "Config {{\n\
-                   \tfasta: {},\n\
-                   \tvcf: {}\n\
-                   \toutput line length: {}\n\
-                   \tverbosity: {}\n\
+                   {0:two_spaces$}fasta: {fasta},\n\
+                   {0:two_spaces$}vcf: {vcf}\n\
+                   {0:two_spaces$}output line length: {l}\n\
+                   {0:two_spaces$}verbosity: {v}\n\
                    }}",
-            self.fasta, self.vcf, self.output_line_length, self.verbosity
+            "",
+            fasta = self.fasta, vcf = self.vcf, l = self.output_line_length, v =self.verbosity,
+            two_spaces=2
         )
     }
 }
@@ -38,6 +40,7 @@ impl fmt::Display for AppConfig {
 // -----------
 // Convenience
 // -----------
+/// `Vec<u8>`
 pub type U8Vec = Vec<u8>;
 
 
