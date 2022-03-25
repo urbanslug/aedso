@@ -1,3 +1,5 @@
+//! Input-Output functions
+
 use crate::types;
 use fbox::ux;
 use itertools::intersperse;

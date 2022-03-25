@@ -1,3 +1,5 @@
+//! Command Line Interface
+
 use crate::types::AppConfig;
 use clap::{Arg, Command};
 use std::env;

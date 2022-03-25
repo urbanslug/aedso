@@ -1,3 +1,5 @@
+//! Index the VCF
+
 use crate::types;
 use fbox::ux;
 use flate2::read::MultiGzDecoder;

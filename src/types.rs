@@ -1,6 +1,11 @@
+//! Config, convenience types & Index
+
 use std::collections::HashMap;
 use std::fmt;
 
+// ----------
+// App config
+// ----------
 #[derive(Debug)]
 pub struct AppConfig {
     pub fasta: String,
@@ -24,8 +29,15 @@ impl fmt::Display for AppConfig {
     }
 }
 
+// -----------
+// Convenience
+// -----------
 pub type U8Vec = Vec<u8>;
 
+
+// -------------------
+// Index related types
+// -------------------
 pub struct Index {
     pub data: HashMap<usize, Vec<U8Vec>>,
     pub positions: Vec<usize>,
