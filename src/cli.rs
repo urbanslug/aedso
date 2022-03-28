@@ -25,7 +25,7 @@ pub fn start() -> AppConfig {
             Arg::new("vcf")
                 .required(true)
                 .takes_value(true)
-                .help("Path to input VCF file"),
+                .help("Path to input VCF file (gzip or plaintext)"),
         )
         .arg(
             Arg::new("output_line_length")

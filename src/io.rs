@@ -4,6 +4,29 @@ use crate::types;
 use fbox::ux;
 use itertools::intersperse;
 use std::io::{self, Write};
+use vcf::{VCFError, VCFReader};
+use std::io::BufReader;
+use std::fs::File;
+use flate2::read::MultiGzDecoder;
+
+// ---
+// VCF
+// ---
+pub fn get_reader_pt(fp: &str) -> Result<VCFReader<BufReader<File>>, VCFError> {
+    let f = File::open(fp).unwrap();
+    let b = BufReader::new(f);
+
+    VCFReader::new(b)
+}
+
+pub fn get_reader_gz(fp: &str) -> Result<VCFReader<BufReader<MultiGzDecoder<File>>>, VCFError> {
+    let f = File::open(fp).unwrap();
+    let x = MultiGzDecoder::new(f);
+    let b = BufReader::new(x);
+
+    VCFReader::new(b)
+}
+
 
 // TODO: should we only write to stdout?
 pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index: &types::Index) {

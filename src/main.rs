@@ -1,4 +1,6 @@
-//! Generate EDS.
+//! # another elastic degenerate string outputter (aedso)
+//!
+//! Generate an Elastic Degenerate String (EDS).
 //!
 //! VCF is 1 indexed i.e. genome loci are started counting from zero.
 //! Expects a single sequence in a fasta file and a VCF from one sequence.
