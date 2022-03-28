@@ -35,18 +35,19 @@ fn main() -> Result<(), VCFError> {
     }
 
     let now = Instant::now();
-    let mut reader = parse_fastx_file(&config.fasta).unwrap_or_else(|_| {
-        panic!(
-            "[aedso::main] invalid fasta path/file {}",
-            config.fasta
-        )
-    });
+    let mut reader = parse_fastx_file(&config.fasta)
+        .unwrap_or_else(|_| panic!("[aedso::main] invalid fasta path/file {}", config.fasta));
     let seq_record = reader
         .next()
         .expect("[aedso::main] end of iter")
         .expect("[aedso::main] invalid record");
 
-    let name: Vec<u8> = seq_record.id().iter().take_while(|x| !(**x).is_ascii_whitespace() ).cloned().collect();
+    let name: Vec<u8> = seq_record
+        .id()
+        .iter()
+        .take_while(|x| !(**x).is_ascii_whitespace())
+        .cloned()
+        .collect();
 
     let seq = seq_record.seq();
     let num_bases = seq.len();
@@ -59,9 +60,10 @@ fn main() -> Result<(), VCFError> {
              {0:four_spaces$}Time taken {time} seconds.",
             "",
             bases = num_bases,
-            name = std::str::from_utf8( &name ).unwrap(),
+            name = std::str::from_utf8(&name).unwrap(),
             time = now.elapsed().as_millis() as f64 / 1000.0,
-            two_spaces=2, four_spaces=4
+            two_spaces = 2,
+            four_spaces = 4
         );
     }
 
@@ -77,8 +79,8 @@ fn main() -> Result<(), VCFError> {
         eprintln!(
             "{0:two_spaces$}Done indexing VCF. Time taken {time} seconds.",
             "",
-            time=now.elapsed().as_millis() as f64 / 1000.0,
-            two_spaces=2
+            time = now.elapsed().as_millis() as f64 / 1000.0,
+            two_spaces = 2
         );
     }
 
@@ -93,8 +95,8 @@ fn main() -> Result<(), VCFError> {
         eprintln!(
             "{0:two_spaces$}Done writing EDS. Time taken {time} seconds.",
             "",
-            time=now.elapsed().as_millis() as f64 / 1000.0,
-            two_spaces=2
+            time = now.elapsed().as_millis() as f64 / 1000.0,
+            two_spaces = 2
         );
     }
 
@@ -103,7 +105,7 @@ fn main() -> Result<(), VCFError> {
         let time = total_time.elapsed().as_millis() as f64 / 1000.0;
 
         let time_str = if time > 60.0 {
-            format!("{} minutes", time/60.0)
+            format!("{} minutes", time / 60.0)
         } else {
             format!("{} seconds", time)
         };

@@ -2,12 +2,12 @@
 
 use crate::types;
 use fbox::ux;
+use flate2::read::MultiGzDecoder;
 use itertools::intersperse;
+use std::fs::File;
+use std::io::BufReader;
 use std::io::{self, Write};
 use vcf::{VCFError, VCFReader};
-use std::io::BufReader;
-use std::fs::File;
-use flate2::read::MultiGzDecoder;
 
 // ---
 // VCF
@@ -26,7 +26,6 @@ pub fn get_reader_gz(fp: &str) -> Result<VCFReader<BufReader<MultiGzDecoder<File
 
     VCFReader::new(b)
 }
-
 
 // TODO: should we only write to stdout?
 pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index: &types::Index) {
@@ -53,11 +52,15 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
             handle
                 .write_all(&seq[faux_beginning..faux_beginning + config.output_line_length])
                 .unwrap();
-            handle.write_all(b"\n").expect("[io::io] Failed to add newline");
+            handle
+                .write_all(b"\n")
+                .expect("[io::io] Failed to add newline");
             faux_beginning += config.output_line_length;
         }
         handle.write_all(&seq[faux_beginning..end]).unwrap();
-        handle.write_all(b"\n").expect("[io::io] Failed to add newline");
+        handle
+            .write_all(b"\n")
+            .expect("[io::io] Failed to add newline");
 
         let variants: &Vec<Vec<u8>> = index
             .data
@@ -80,7 +83,11 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
         begining = end;
     }
 
-    let last: usize = *index.positions.last().expect("[io::io] could not get last position") - 1;
+    let last: usize = *index
+        .positions
+        .last()
+        .expect("[io::io] could not get last position")
+        - 1;
 
     // write the last bit
     handle.write_all(&seq[last..num_bases]).unwrap();

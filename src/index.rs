@@ -1,12 +1,10 @@
 //! Index the VCF
 
-use crate::types;
 use crate::io;
+use crate::types;
 use fbox::ux;
 use std::io::BufReader;
 use vcf::{VCFError, VCFReader, VCFRecord};
-
-
 
 // -----
 // Index
@@ -16,8 +14,7 @@ fn loop_records<T: std::io::Read>(
     mut reader: VCFReader<BufReader<T>>,
     num_bases: usize,
     config: &types::AppConfig,
-) -> Result<types::Index, VCFError>
-{
+) -> Result<types::Index, VCFError> {
     let verbosity = config.verbosity;
 
     // --------------
@@ -44,7 +41,7 @@ fn loop_records<T: std::io::Read>(
                 if vcf_record.chromosome != seq_name {
                     continue;
                 }
-            },
+            }
             Err(e) => {
                 if verbosity > 2 {
                     eprintln!("[index::index] skipping invalid record {e}");
@@ -55,7 +52,7 @@ fn loop_records<T: std::io::Read>(
 
         let position = vcf_record.position;
 
-        if index_record(&vcf_record, num_bases,&mut index).is_err() {
+        if index_record(&vcf_record, num_bases, &mut index).is_err() {
             break;
         }
 
@@ -69,13 +66,11 @@ fn loop_records<T: std::io::Read>(
     Ok(index)
 }
 
-
 fn index_record(
     vcf_record: &VCFRecord,
     num_bases: usize,
-    index: &mut types::Index
-) -> Result<(), String>
-{
+    index: &mut types::Index,
+) -> Result<(), String> {
     let position = vcf_record.position as usize;
 
     if position > num_bases {
@@ -85,7 +80,6 @@ fn index_record(
         );
         return Err(String::from("Position is beyond number of bases"));
     }
-
 
     let mut b: Vec<u8> = vcf_record.reference.clone();
     b.shrink_to_fit();
@@ -117,28 +111,23 @@ fn index_record(
     Ok(())
 }
 
-
 // -----------
 // Handle file
 // -----------
 pub fn index(
     seq_name: &[u8],
     num_bases: usize,
-    config: &types::AppConfig
+    config: &types::AppConfig,
 ) -> Result<types::Index, VCFError> {
     let f = &config.vcf;
     let maybe_index: Result<types::Index, VCFError> = match io::get_reader_gz(f) {
-        Ok(r) => {
-            loop_records(seq_name, r, num_bases, config)
-        },
-        Err(_) => {
-            match io::get_reader_pt(f) {
-                Ok(r) => loop_records(seq_name, r, num_bases, config),
-                Err(e) => {
-                    panic!("[aesdo::index] Unable to parse VCF {} {}", f, e);
-                }
+        Ok(r) => loop_records(seq_name, r, num_bases, config),
+        Err(_) => match io::get_reader_pt(f) {
+            Ok(r) => loop_records(seq_name, r, num_bases, config),
+            Err(e) => {
+                panic!("[aesdo::index] Unable to parse VCF {} {}", f, e);
             }
-        }
+        },
     };
 
     maybe_index

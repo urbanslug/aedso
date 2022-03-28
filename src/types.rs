@@ -31,8 +31,11 @@ impl fmt::Display for AppConfig {
                    {0:two_spaces$}verbosity: {v}\n\
                    }}",
             "",
-            fasta = self.fasta, vcf = self.vcf, l = self.output_line_length, v =self.verbosity,
-            two_spaces=2
+            fasta = self.fasta,
+            vcf = self.vcf,
+            l = self.output_line_length,
+            v = self.verbosity,
+            two_spaces = 2
         )
     }
 }
@@ -42,7 +45,6 @@ impl fmt::Display for AppConfig {
 // -----------
 /// `Vec<u8>`
 pub type U8Vec = Vec<u8>;
-
 
 // -------------------
 // Index related types
