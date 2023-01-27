@@ -44,28 +44,46 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
     let mut end: usize;
     let comma: Vec<u8> = Vec::from([b',']); // comma
 
+    // let mut prev_pos: Option<usize> = None;
+    // eprintln!("found -> {}", index.data.len());
+
     for pos in &index.positions {
-        end = *pos as usize - 1;
+        end = *pos as usize - 1; // because VCF is 1 indexed
+
+        if *pos == 0 {
+            panic!("[io::io] Encountered a position of 0. VCF should be 1 indexed.")
+        }
+        let tru_ref: Vec<u8> = Vec::from([seq[pos - 1]]);
+
+        // eprintln!("{} {} {}", begining, end, pos);
+        //eprintln!("{}", prev_pos.unwrap());
 
         let mut faux_beginning = begining as usize;
         while faux_beginning + config.output_line_length < end {
             handle
                 .write_all(&seq[faux_beginning..faux_beginning + config.output_line_length])
                 .unwrap();
+            /*
             handle
                 .write_all(b"\n")
                 .expect("[io::io] Failed to add newline");
+            */
             faux_beginning += config.output_line_length;
         }
+
         handle.write_all(&seq[faux_beginning..end]).unwrap();
+        /*
         handle
             .write_all(b"\n")
             .expect("[io::io] Failed to add newline");
+        */
 
         let variants: &Vec<Vec<u8>> = index
             .data
             .get(pos)
             .unwrap_or_else(|| panic!("[io::io] index error pos {}", pos));
+
+        let l = variants.iter().any(|v| v.clone() == tru_ref);
 
         let variants = intersperse(variants, &comma);
 
@@ -75,20 +93,22 @@ pub fn write_eds(config: &types::AppConfig, num_bases: usize, seq: &[u8], index:
                 .write_all(i)
                 .unwrap_or_else(|_| panic!("[io::io] error writing {}", pos));
         }
+
+        if !l {
+            handle.write_all(b",").unwrap();
+            handle.write_all(&tru_ref).unwrap();
+        }
+
         handle.write_all(b"}").unwrap();
 
         let delta = num::abs_sub(end as i64, begining as i64) as u64;
         bar.inc(delta);
 
-        begining = end;
+        begining = *pos;
     }
 
-    let last: usize = *index
-        .positions
-        .last()
-        .expect("[io::io] could not get last position")
-        - 1;
-
-    // write the last bit
-    handle.write_all(&seq[last..num_bases]).unwrap();
+    if begining < num_bases {
+        // write the last part
+        handle.write_all(&seq[begining..num_bases]).unwrap();
+    }
 }

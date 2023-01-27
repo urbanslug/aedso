@@ -39,7 +39,7 @@ fn loop_records<T: std::io::Read>(
             Ok(false) => break,
             Ok(true) => {
                 if vcf_record.chromosome != seq_name {
-                    continue;
+                    // continue;
                 }
             }
             Err(e) => {
@@ -52,6 +52,8 @@ fn loop_records<T: std::io::Read>(
 
         let position = vcf_record.position;
 
+        //eprintln!("pos -> {position}");
+
         if index_record(&vcf_record, num_bases, &mut index).is_err() {
             break;
         }
@@ -62,7 +64,7 @@ fn loop_records<T: std::io::Read>(
 
         cursor = position;
     }
-
+    index.positions.sort();
     Ok(index)
 }
 
@@ -71,7 +73,18 @@ fn index_record(
     num_bases: usize,
     index: &mut types::Index,
 ) -> Result<(), String> {
-    let position = vcf_record.position as usize;
+    let mut position = vcf_record.position as usize;
+
+    // eprintln!("position {}", position);
+
+    if position < 160531482 || position > 160664275 {
+        // eprintln!("discarded {}", position);
+        return Ok(());
+    }
+
+    // eprintln!("found {}", position);
+
+    position -= 160531482;
 
     if position > num_bases {
         eprintln!(
@@ -87,12 +100,18 @@ fn index_record(
     for alt in &vcf_record.alternative {
         let mut x = alt.to_vec();
         x.shrink_to_fit();
-        variants.push(x);
+        if x != String::from("<.>").as_bytes() {
+            variants.push(x);
+        }
+    }
+
+    if variants.is_empty() {
+        return Ok(());
     }
 
     variants.shrink_to_fit();
 
-    index.positions.push(position);
+    // index.positions.push(position);
     match index.data.get_mut(&position) {
         Some(v) => {
             for variant in variants {
@@ -104,6 +123,7 @@ fn index_record(
             v.dedup();
         }
         _ => {
+            index.positions.push(position);
             index.data.insert(position, variants);
         }
     };
