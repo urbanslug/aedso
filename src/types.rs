@@ -17,6 +17,8 @@ pub struct AppConfig {
     pub fasta: String,
     pub vcf: String,
     pub verbosity: u8,
+    pub region_start: usize,
+    pub region_end: Option<usize>,
     pub output_line_length: usize,
 }
 

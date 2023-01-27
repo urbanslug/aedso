@@ -54,7 +54,7 @@ fn loop_records<T: std::io::Read>(
 
         //eprintln!("pos -> {position}");
 
-        if index_record(&vcf_record, num_bases, &mut index).is_err() {
+        if index_record(&vcf_record, num_bases, &mut index, config).is_err() {
             break;
         }
 
@@ -72,19 +72,20 @@ fn index_record(
     vcf_record: &VCFRecord,
     num_bases: usize,
     index: &mut types::Index,
+    config: &types::AppConfig,
 ) -> Result<(), String> {
     let mut position = vcf_record.position as usize;
 
     // eprintln!("position {}", position);
 
-    if position < 160531482 || position > 160664275 {
+    if position < config.region_start || position > config.region_end.unwrap() {
         // eprintln!("discarded {}", position);
         return Ok(());
     }
 
     // eprintln!("found {}", position);
 
-    position -= 160531482;
+    position -= config.region_start;
 
     if position > num_bases {
         eprintln!(

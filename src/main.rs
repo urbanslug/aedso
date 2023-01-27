@@ -18,7 +18,7 @@ use vcf::VCFError;
 fn main() -> Result<(), VCFError> {
     let total_time = Instant::now();
 
-    let config: types::AppConfig = cli::start();
+    let mut config: types::AppConfig = cli::start();
     let verbosity = config.verbosity;
 
     if verbosity > 0 {
@@ -51,6 +51,10 @@ fn main() -> Result<(), VCFError> {
 
     let seq = seq_record.seq();
     let num_bases = seq.len();
+
+    if config.region_end.is_none() {
+        config.region_end = Some(num_bases);
+    }
 
     if verbosity > 2 {
         eprintln!(
